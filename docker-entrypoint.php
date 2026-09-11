@@ -7,7 +7,7 @@ require_once __DIR__.'/vendor/autoload.php';
 
 $safe_defaults = [
     // mongodb regex search by default
-    "SCOUT_DRIVER" => "none",
+    "SCOUT_DRIVER" => "null",
     "SCOUT_QUEUE" => false,
     "THROTTLE" => false,
     "QUEUE_CONNECTION" => "database",
@@ -28,7 +28,7 @@ if (!file_exists(".env")) {
     $writer = new \MirazMac\DotEnv\Writer(__DIR__ . '/' . '.env');
 
     foreach ($safe_defaults as $env_var_name => $env_var_default) {
-        $writer->set("SCOUT_DRIVER", env($env_var_name, $env_var_default));
+        $writer->set($env_var_name, env($env_var_name, $env_var_default));
     }
     $writer->write();
 }
