@@ -6,6 +6,9 @@ volumes:
 
 networks:
   jikan_network: {}
+  # shared with the Cloudflare tunnel so jikan_rest is reachable via cloudflared
+  dokploy-network:
+    external: true
 
 secrets:
   db_username:
@@ -27,6 +30,7 @@ services:
     user: "${APP_UID:-10001}:${APP_GID:-10001}"
     networks:
       - jikan_network
+      - dokploy-network
     secrets:
       - db_username
       - db_password
