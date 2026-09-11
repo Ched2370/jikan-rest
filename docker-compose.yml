@@ -36,6 +36,10 @@ services:
       PS1: '\[\033[1;32m\]\[\033[1;36m\][\u@\h] \[\033[1;34m\]\w\[\033[0;35m\] \[\033[1;36m\]# \[\033[0m\]'
     env_file:
       - ./docker/config/.env.compose
+    volumes:
+      # Bind-mount the corrected entrypoint so the deployed container (official image)
+      # never forces SCOUT_DRIVER into /app/.env -> keeps Scout disabled (Mongo fallback)
+      - ./docker-entrypoint.php:/app/docker-entrypoint.php:ro
     ports:
       - "8080:8080/tcp"
     hostname: jikan-rest-api

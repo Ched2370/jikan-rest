@@ -6,8 +6,8 @@ use Dotenv\Dotenv;
 require_once __DIR__.'/vendor/autoload.php';
 
 $safe_defaults = [
-    // mongodb regex search by default
-    "SCOUT_DRIVER" => "null",
+    // SCOUT_DRIVER must stay ABSENT: Laravel env() converts the literal "null" to PHP null,
+    // and both "" and null != "null" enable Scout. Only the config default 'null' disables it.
     "SCOUT_QUEUE" => false,
     "THROTTLE" => false,
     "QUEUE_CONNECTION" => "database",
@@ -64,12 +64,13 @@ $dotenv->load();
 
 $current_env = $_ENV;
 
-if ($current_env["SCOUT_DRIVER"] === "typesense" && empty($current_env["TYPESENSE_API_KEY"])) {
+if (($current_env["SCOUT_DRIVER"] ?? null) === "typesense" && empty($current_env["TYPESENSE_API_KEY"])) {
     echo "Please set the TYPESENSE_API_KEY environment variable when setting SCOUT_DRIVER to typesense.";
     exit(1);
 }
 
 $rrConfig = \Symfony\Component\Yaml\Yaml::parse(file_get_contents(".rr.yaml"));
+$rrConfig["http"]["pool"]["num_workers"] = (int) env("RR_NUM_WORKERS", 0);
 $rrConfig["http"]["pool"]["supervisor"]["max_worker_memory"] = (int) env("RR_MAX_WORKER_MEMORY", 128);
 $rrConfig["http"]["max_request_size"] = (int) env("RR_MAX_REQUEST_SIZE_MB", 256);
 $rrConfig["service"]["laravel_queue_worker_1"]["process_num"] = (int) env("JIKAN_QUEUE_WORKER_PROCESS_NUM", 1);
