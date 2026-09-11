@@ -8,6 +8,9 @@ require_once __DIR__.'/vendor/autoload.php';
 $safe_defaults = [
     // SCOUT_DRIVER must stay ABSENT: Laravel env() converts the literal "null" to PHP null,
     // and both "" and null != "null" enable Scout. Only the config default 'null' disables it.
+    // APP_URL must point to the internal RoadRunner HTTP port (8080), otherwise the
+    // indexer:* commands fail silently calling http://localhost/v4/... (Connection refused).
+    "APP_URL" => "http://localhost:8080",
     "SCOUT_QUEUE" => false,
     "THROTTLE" => false,
     "QUEUE_CONNECTION" => "database",
