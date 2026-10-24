@@ -35,7 +35,12 @@ abstract class JikanApiSearchableModel extends JikanApiModel implements Typesens
                         'name' => $titleAttributeName,
                         'type' => 'string',
                         'sort' => true,
-                        'optional' => false
+                        'optional' => false,
+                        // search() always asks Typesense for infix=fallback, which falls back to
+                        // infix search as soon as a query returns no hits (an empty collection
+                        // always does) and then errors out on fields without an infix index:
+                        // "Could not find `name` in the infix index."
+                        'infix' => true,
                     ]
                 ],
                 $this->queryByFieldDeclarations($titleAttributeName),
@@ -93,6 +98,7 @@ abstract class JikanApiSearchableModel extends JikanApiModel implements Typesens
                 'type' => $fieldTypes[$fieldName] ?? 'string',
                 'optional' => true,
                 'sort' => false,
+                'infix' => true,
             ];
         }
 
