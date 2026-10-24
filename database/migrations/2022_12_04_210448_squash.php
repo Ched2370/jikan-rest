@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create(env('QUEUE_TABLE', 'jobs'), function (Blueprint $table) {
+        $this->createCollection(env('QUEUE_TABLE', 'jobs'), function (Blueprint $table) {
             $table->index(['queue', 'reserved_at']);
             $table->bigIncrements('id');
             $table->string('queue');
@@ -24,7 +24,7 @@ return new class extends Migration
             $table->unsignedInteger('created_at');
         });
 
-        Schema::create(env('QUEUE_FAILED_TABLE', 'jobs_failed'), function (Blueprint $table) {
+        $this->createCollection(env('QUEUE_FAILED_TABLE', 'jobs_failed'), function (Blueprint $table) {
             $table->increments('id');
             $table->text('connection');
             $table->text('queue');
@@ -33,7 +33,7 @@ return new class extends Migration
             $table->timestamp('failed_at')->useCurrent();
         });
 
-        Schema::create('anime', function (Blueprint $table) {
+        $this->createCollection('anime', function (Blueprint $table) {
             $table->unique(['request_hash' => 1], 'request_hash');
             $table->unique(['mal_id' => 1], 'mal_id');
 
@@ -86,7 +86,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('manga', function (Blueprint $table) {
+        $this->createCollection('manga', function (Blueprint $table) {
             $table->unique(['request_hash' => 1], 'request_hash');
             $table->unique(['mal_id' => 1], 'mal_id');
 
@@ -137,7 +137,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('people', function (Blueprint $table) {
+        $this->createCollection('people', function (Blueprint $table) {
             $table->unique(['request_hash' => 1], 'request_hash');
             $table->unique(['mal_id' => 1], 'mal_id');
 
@@ -170,7 +170,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('characters', function (Blueprint $table) {
+        $this->createCollection('characters', function (Blueprint $table) {
             $table->unique(['request_hash' => 1], 'request_hash');
             $table->unique(['mal_id' => 1], 'mal_id');
 
@@ -200,7 +200,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('magazines', function (Blueprint $table) {
+        $this->createCollection('magazines', function (Blueprint $table) {
             $table->unique(['mal_id' => 1], 'mal_id');
             $table->index('count', 'count');
             $table->index('name', 'name');
@@ -213,7 +213,7 @@ return new class extends Migration
             );
         });
 
-        Schema::create('clubs', function (Blueprint $table) {
+        $this->createCollection('clubs', function (Blueprint $table) {
             $table->unique(['request_hash' => 1], 'request_hash');
             $table->unique(['mal_id' => 1], 'mal_id');
             $table->index('name');
@@ -230,7 +230,7 @@ return new class extends Migration
             );
         });
 
-        Schema::create('producers', function (Blueprint $table) {
+        $this->createCollection('producers', function (Blueprint $table) {
             $table->unique(['mal_id' => 1], 'mal_id');
             $table->index('count', 'count');
             $table->index('name', 'name');
@@ -246,7 +246,7 @@ return new class extends Migration
             );
         });
 
-        Schema::create('genres_anime', function (Blueprint $table) {
+        $this->createCollection('genres_anime', function (Blueprint $table) {
             $table->unique(['mal_id' => 1], 'mal_id');
             $table->index('count', 'count');
             $table->index('name', 'name');
@@ -259,7 +259,7 @@ return new class extends Migration
             );
         });
 
-        Schema::create('demographics_anime', function (Blueprint $table) {
+        $this->createCollection('demographics_anime', function (Blueprint $table) {
             $table->unique(['mal_id' => 1], 'mal_id');
             $table->index('count', 'count');
             $table->index('name', 'name');
@@ -272,7 +272,7 @@ return new class extends Migration
             );
         });
 
-        Schema::create('explicit_genres_anime', function (Blueprint $table) {
+        $this->createCollection('explicit_genres_anime', function (Blueprint $table) {
             $table->unique(['mal_id' => 1], 'mal_id');
             $table->index('count', 'count');
             $table->index('name', 'name');
@@ -285,7 +285,7 @@ return new class extends Migration
             );
         });
 
-        Schema::create('themes_anime', function (Blueprint $table) {
+        $this->createCollection('themes_anime', function (Blueprint $table) {
             $table->unique(['mal_id' => 1], 'mal_id');
             $table->index('count', 'count');
             $table->index('name', 'name');
@@ -298,7 +298,7 @@ return new class extends Migration
             );
         });
 
-        Schema::create('genres_manga', function (Blueprint $table) {
+        $this->createCollection('genres_manga', function (Blueprint $table) {
             $table->unique(['mal_id' => 1], 'mal_id');
             $table->index('count', 'count');
             $table->index('name', 'name');
@@ -311,7 +311,7 @@ return new class extends Migration
             );
         });
 
-        Schema::create('explicit_genres_manga', function (Blueprint $table) {
+        $this->createCollection('explicit_genres_manga', function (Blueprint $table) {
             $table->unique(['mal_id' => 1], 'mal_id');
             $table->index('count', 'count');
             $table->index('name', 'name');
@@ -324,7 +324,7 @@ return new class extends Migration
             );
         });
 
-        Schema::create('demographics_manga', function (Blueprint $table) {
+        $this->createCollection('demographics_manga', function (Blueprint $table) {
             $table->unique(['mal_id' => 1], 'mal_id');
             $table->index('count', 'count');
             $table->index('name', 'name');
@@ -337,7 +337,7 @@ return new class extends Migration
             );
         });
 
-        Schema::create('themes_manga', function (Blueprint $table) {
+        $this->createCollection('themes_manga', function (Blueprint $table) {
             $table->unique(['mal_id' => 1], 'mal_id');
             $table->index('count', 'count');
             $table->index('name', 'name');
@@ -350,7 +350,7 @@ return new class extends Migration
             );
         });
 
-        Schema::create('users', function (Blueprint $table) {
+        $this->createCollection('users', function (Blueprint $table) {
             $table->unique(['request_hash' => 1], 'request_hash');
             $table->unique(['mal_id' => 1], 'mal_id');
             $table->unique(['internal_username' => 1], 'internal_username');
@@ -371,6 +371,25 @@ return new class extends Migration
 
             $table->timestamps();
         });
+    }
+
+    /**
+     * Schema::create() issues createCollection(), which fails with
+     * "NamespaceExists" when the collection is already there — that happens when the
+     * migrations have never been recorded on a live database (anime/manga already exist).
+     * For an existing collection we only run the blueprint, which creates the indexes
+     * (jenssegers executes createIndex() immediately and Mongo ignores a re-created
+     * index with the same spec, so this stays idempotent).
+     */
+    private function createCollection(string $name, \Closure $callback): void
+    {
+        if (Schema::hasTable($name)) {
+            Schema::collection($name, $callback);
+
+            return;
+        }
+
+        Schema::create($name, $callback);
     }
 
     /**

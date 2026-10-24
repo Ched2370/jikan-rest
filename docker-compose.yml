@@ -42,7 +42,8 @@ services:
       - ./docker/config/.env.compose
     volumes:
       # Bind-mount the corrected entrypoint so the deployed container (official image)
-      # never forces SCOUT_DRIVER into /app/.env -> keeps Scout disabled (Mongo fallback)
+      # never forces a broken SCOUT_DRIVER into /app/.env (the upstream loop wrote SCOUT_DRIVER=
+      # on every iteration, which enabled Scout with an invalid driver and 500'd every endpoint).
       - ./docker-entrypoint.php:/app/docker-entrypoint.php:ro
     ports:
       - "8081:8080/tcp"
@@ -131,7 +132,10 @@ services:
           memory: 150M
 
   typesense:
-    image: docker.io/typesense/typesense:0.24.1
+    # 30.2-arm64-lg-page16: the stock 0.24.1 build aborts on this Pi (ExitCode 134,
+    # "<jemalloc>: Unsupported system page size") because the kernel uses 16 KB pages.
+    # Pin the exact "-lg-page16" tag: the multi-arch "30.2" tag resolves to the 4 KB arm64 build.
+    image: docker.io/typesense/typesense:30.2-arm64-lg-page16
     hostname: typesense
     entrypoint: /bin/sh
     secrets:
@@ -140,13 +144,23 @@ services:
       - jikan_network
     command:
       - -c
-      - TYPESENSE_API_KEY="$$(cat /run/secrets/typesense_api_key)" /opt/typesense-server --data-dir /data
+      # exec => typesense-server becomes PID 1 and receives SIGTERM for graceful shutdown
+      - TYPESENSE_API_KEY="$$(cat /run/secrets/typesense_api_key)" exec /opt/typesense-server --data-dir /data
+    healthcheck:
+      # the image ships neither wget nor curl, only bash -> probe the port with /dev/tcp
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8108"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     deploy:
       restart_policy:
-        condition: none
+        condition: on-failure
+        max_attempts: 3
+        delay: 5s
       resources:
         limits:
-          memory: 200M
+          memory: 512M
     volumes:
       - typesense-data:/data
     ports:
