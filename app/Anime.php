@@ -303,7 +303,7 @@ class Anime extends JikanApiSearchableModel
     {
         return [
             'name' => $this->searchableAs(),
-            'fields' => [
+            'fields' => array_merge([
                 [
                     'name' => '.*',
                     'type' => 'auto',
@@ -359,7 +359,7 @@ class Anime extends JikanApiSearchableModel
                     'infix' => true,
                     'sort' => false
                 ]
-            ]
+            ], $this->sortFieldDeclarations())
         ];
     }
 
@@ -384,6 +384,32 @@ class Anime extends JikanApiSearchableModel
     public function getTypeSenseQueryByWeights(): string|null
     {
         return "2,2,1,1,3,3,1";
+    }
+
+    /**
+     * Fields of the anime search index that may be sorted on, as name => Typesense type.
+     *
+     * getSearchIndexSortBy() sorts on popularity/rank for every query, and every order_by value of
+     * AnimeOrderByEnum that toSearchableArray() actually indexes has to exist in the schema too,
+     * otherwise Typesense answers "Could not find a field named ... in the schema for sorting.".
+     * Types mirror toSearchableArray(): dates are unix seconds, score is a float. `scored_by` is
+     * deliberately missing because it is not part of the indexed document.
+     *
+     * @return array<string, string>
+     */
+    public function typesenseSortFields(): array
+    {
+        return [
+            'mal_id' => 'int64',
+            'start_date' => 'int64',
+            'end_date' => 'int64',
+            'episodes' => 'int64',
+            'score' => 'float',
+            'rank' => 'int64',
+            'popularity' => 'int64',
+            'members' => 'int64',
+            'favorites' => 'int64',
+        ];
     }
 
     /**

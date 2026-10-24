@@ -45,6 +45,16 @@ services:
       # never forces a broken SCOUT_DRIVER into /app/.env (the upstream loop wrote SCOUT_DRIVER=
       # on every iteration, which enabled Scout with an invalid driver and 500'd every endpoint).
       - ./docker-entrypoint.php:/app/docker-entrypoint.php:ro
+      # Search index schema fixes: this compose has no `build:` section, so the app code is the
+      # one baked into jikanme/jikan-rest:latest. Mounting a file is how app code reaches
+      # production here (same mechanism as docker-entrypoint.php above) and keeps the change
+      # revertible: removing the line restores the file shipped with the image.
+      # Without them Typesense rejects query_by/sort_by on undeclared fields as long as the
+      # collection is empty (the dynamic `.*` field never materializes), so /v4/*?q= returns 500.
+      - ./app/JikanApiSearchableModel.php:/app/app/JikanApiSearchableModel.php:ro
+      - ./app/Anime.php:/app/app/Anime.php:ro
+      - ./app/Manga.php:/app/app/Manga.php:ro
+      - ./app/Person.php:/app/app/Person.php:ro
     ports:
       - "8081:8080/tcp"
     hostname: jikan-rest-api

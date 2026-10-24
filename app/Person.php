@@ -105,6 +105,19 @@ class Person extends JikanApiSearchableModel
         ];
     }
 
+    /**
+     * `alternate_names` is indexed as a list of names (see Jikan's PersonParser), so it has to be
+     * declared as string[] — everything else in typesenseQueryBy() is a plain string.
+     *
+     * @return array<string, string>
+     */
+    public function typesenseQueryByFieldTypes(): array
+    {
+        return [
+            "alternate_names" => "string[]",
+        ];
+    }
+
     public function getTitleAttributeName(): string
     {
         return 'name';
