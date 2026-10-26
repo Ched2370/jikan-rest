@@ -5,16 +5,20 @@ namespace App\Services;
 use App\Contracts\Repository;
 use App\JikanApiSearchableModel;
 use App\Support\JikanConfig;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Laravel\Scout\Builder;
 use Typesense\Documents;
 use App\Contracts\SearchAnalyticsService;
+use Illuminate\Support\Facades\Log;
 
-class TypeSenseScoutSearchService implements ScoutSearchService
+class TypeSenseScoutSearchService implements FilterableScoutSearchService
 {
     private int $maxItemsPerPage;
 
     private JikanConfig $jikanConfig;
+
+    private ?Collection $filterParameters = null;
 
     public function __construct(private readonly Repository $repository,
                     JikanConfig $config,
@@ -29,6 +33,17 @@ class TypeSenseScoutSearchService implements ScoutSearchService
     }
 
     /**
+     * Remembers the request parameters that describe the filters (type, status, genres, scores, ...)
+     * so that they can be pushed into the search engine query by search().
+     */
+    public function setFilterParameters(Collection $requestParameters): self
+    {
+        $this->filterParameters = $requestParameters;
+
+        return $this;
+    }
+
+    /**
      * Executes a search operation via Laravel Scout on the provided model class.
      * @param string $q
      * @param string|null $orderByField
@@ -38,12 +53,51 @@ class TypeSenseScoutSearchService implements ScoutSearchService
     public function search(string $q, ?string $orderByField = null,
                            bool $sortDirectionDescending = false): \Laravel\Scout\Builder
     {
-        return $this->repository->search($q, $this->middleware($orderByField, $sortDirectionDescending));
+        $filterBy = $this->compileFilterBy();
+
+        return $this->repository->search($q, $this->middleware($orderByField, $sortDirectionDescending, $filterBy));
     }
 
-    private function middleware(?string $orderByField = null, bool $sortDirectionDescending = false): \Closure
+    /**
+     * Builds the Typesense `filter_by` expression for the current request parameters.
+     *
+     * The filters are compiled from a throwaway query builder built exactly like the one used by
+     * the non-`q` code path, so both paths always apply the very same conditions.
+     */
+    private function compileFilterBy(): ?string
     {
-        return function (Documents $documents, string $query, array $options) use ($orderByField, $sortDirectionDescending) {
+        if ($this->filterParameters === null || $this->filterParameters->isEmpty()) {
+            return null;
+        }
+
+        try {
+            $modelInstance = $this->repository->createEntity();
+
+            if (!$modelInstance instanceof JikanApiSearchableModel) {
+                return null;
+            }
+
+            // the repository is a request wide singleton: never reuse its cached query builder here,
+            // a fresh one keeps the search filters from leaking into other queries of the request
+            $query = $modelInstance->newQuery()->filter($this->filterParameters);
+
+            $compiler = new TypesenseFilterCompiler(
+                $this->collectionDescriptor->getFields($modelInstance)
+            );
+
+            return $compiler->compile($query->getQuery());
+        } catch (\Throwable $e) {
+            // pushing filters down is an optimisation: any failure falls back to post-filtering
+            Log::warning('Could not compile the Typesense filter_by expression: ' . $e->getMessage());
+
+            return null;
+        }
+    }
+
+    private function middleware(?string $orderByField = null, bool $sortDirectionDescending = false,
+                                ?string $filterBy = null): \Closure
+    {
+        return function (Documents $documents, string $query, array $options) use ($orderByField, $sortDirectionDescending, $filterBy) {
             $options['exhaustive_search'] = $this->jikanConfig->exhaustiveSearch();
             $options['search_cutoff_ms'] = $this->jikanConfig->searchCutOffMs();
             // this will be ignored together with exhaustive_search set to "true"
@@ -51,6 +105,16 @@ class TypeSenseScoutSearchService implements ScoutSearchService
             $options['typo_tokens_threshold'] = $this->jikanConfig->typoTokensThreshold();
             $options['enable_highlight_v1'] = 'false';
             $options['infix'] = 'fallback';
+
+            if (!empty($filterBy)) {
+                $existingFilterBy = $options['filter_by'] ?? '';
+                // each side is parenthesised: a compiled expression may contain ` || ` at its top
+                // level, and `a && b || c` would not mean `a && (b || c)`
+                $options['filter_by'] = in_array($existingFilterBy, ['', ' && ', '&&'], true)
+                    ? $filterBy
+                    : '(' . $existingFilterBy . ') && (' . $filterBy . ')';
+            }
+
             // prevent `Could not parse the filter query: unbalanced `&&` operands.` error
             // this adds support for typesense v0.24.1
             if (array_key_exists('filter_by', $options) && ($options['filter_by'] === ' && ' || $options['filter_by'] === '&&')) {

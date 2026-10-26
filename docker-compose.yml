@@ -55,6 +55,15 @@ services:
       - ./app/Anime.php:/app/app/Anime.php:ro
       - ./app/Manga.php:/app/app/Manga.php:ro
       - ./app/Person.php:/app/app/Person.php:ro
+      # Filters pushed down to Typesense: `?q=` searches now send a `filter_by` expression built
+      # from the exact same filter pipeline used by the non-`q` path, so the engine only returns
+      # hits that can match instead of fetching every text hit and filtering it afterwards.
+      # The Mongo post-filter stays in place as the authoritative filter.
+      - ./app/Services/TypesenseFilterCompiler.php:/app/app/Services/TypesenseFilterCompiler.php:ro
+      - ./app/Services/FilterableScoutSearchService.php:/app/app/Services/FilterableScoutSearchService.php:ro
+      - ./app/Services/TypeSenseScoutSearchService.php:/app/app/Services/TypeSenseScoutSearchService.php:ro
+      - ./app/Services/SearchEngineSearchService.php:/app/app/Services/SearchEngineSearchService.php:ro
+      - ./app/Services/TypesenseCollectionDescriptor.php:/app/app/Services/TypesenseCollectionDescriptor.php:ro
     ports:
       - "8081:8080/tcp"
     hostname: jikan-rest-api
